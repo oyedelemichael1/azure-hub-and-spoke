@@ -1,63 +1,29 @@
-resource "azurerm_resource_group" "hub_spoke_rg" {
-  name     = "hub-spoke-rg"
-  location = "West Europe"
-}
+module "hub_and_spkoke" {
+  source = "./resources/network"
 
-data "azurerm_subscription" "current" {}
-
-#network manager
-resource "azurerm_network_manager" "hub_spoke_network_manager" {
-  name                = "hub-spoke-network-manager"
-  location            = azurerm_resource_group.hub_spoke_rg.location
-  resource_group_name = azurerm_resource_group.hub_spoke_rg.name
-  scope {
-    subscription_ids = [data.azurerm_subscription.current.id]
+  resource_group_name     = var.resource_group_name
+  resource_group_location = var.resource_group_location
+  hub_vnet_name               = "prod-hub-vnet"
+  hub_vnet_address_space      = "10.0.0.0/16"
+  hub_vnet_subnets = {
+    "hub-subnet"  = "10.0.0.0/24"
+    "app-subnet"  = "10.0.2.0/24"
+    "db-subnet"   = "10.0.3.0/24"
   }
-  scope_accesses = ["Connectivity", "SecurityAdmin"]
-  description    = "hub and spoke network manager"
-}
-
-
-#network group
-resource "azurerm_network_manager_network_group" "spoke_network_group" {
-  name               = "spoke-network-group"
-  network_manager_id = azurerm_network_manager.hub_spoke_network_manager.id
-}
-
-#group member 1
-resource "azurerm_network_manager_static_member" "spoke1_nmsm" {
-  name                      = "spoke1-nmsm"
-  network_group_id          = azurerm_network_manager_network_group.spoke_network_group.id
-  target_virtual_network_id = azurerm_virtual_network.spoke1.id
-}
-
-#group member 2
-resource "azurerm_network_manager_static_member" "spoke2_nmsm" {
-  name                      = "spoke2-nmsm"
-  network_group_id          = azurerm_network_manager_network_group.spoke_network_group.id
-  target_virtual_network_id = azurerm_virtual_network.spoke2.id
-}
-
-#connectivity configuration
-resource "azurerm_network_manager_connectivity_configuration" "connectivity_config" {
-  name                  = "connectivity-config"
-  network_manager_id    = azurerm_network_manager.hub_spoke_network_manager.id
-  connectivity_topology = "HubAndSpoke"
-  applies_to_group {
-    group_connectivity = "None" #"DirectlyConnected"
-    network_group_id   = azurerm_network_manager_network_group.spoke_network_group.id
+  spoke_vnets = {
+    "spoke1" = {
+      address_space = "10.1.0.0/16"
+      subnets = {
+        "default"  = {cidr_block = "10.1.0.0/24"}
+        "app"      = {cidr_block = "10.1.1.0/24"}
+      }
+    },
+    "spoke2" = {
+      address_space = "10.2.0.0/16"
+      subnets = {
+        "default"  = {cidr_block = "10.2.0.0/24"}
+        "database" = {cidr_block = "10.2.1.0/24"}
+      }
+    }
   }
-
-  hub {
-    resource_id   = azurerm_virtual_network.hub.id
-    resource_type = "Microsoft.Network/virtualNetworks"
-  }
-}
-
-#connectivity config deployment 
-resource "azurerm_network_manager_deployment" "connectivity_deployment" {
-  network_manager_id = azurerm_network_manager.hub_spoke_network_manager.id
-  location           = "West Europe"
-  scope_access       = "Connectivity"
-  configuration_ids  = [azurerm_network_manager_connectivity_configuration.connectivity_config.id]
 }
