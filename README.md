@@ -59,8 +59,10 @@ provider "azurerm" {
 ```
 
 ### To Test the Script
-```hcl
+
 create a terraform.tfvars file in the root directory with the following 
+
+```hcl
 client_id = "<your-client-id>"
 client_secret = "<your-client-secret>"
 tenant_id = "<your-tenant-id>"<
