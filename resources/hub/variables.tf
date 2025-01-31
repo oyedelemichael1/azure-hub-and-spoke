@@ -1,13 +1,11 @@
 variable "resource_group_name" {
   description = "The name of the Azure resource group"
   type        = string
-  default =  "hub-spoke-rg"
 }
 
 variable "resource_group_location" {
   description = "The location of the Azure resource group"
   type        = string
-  default = "West Europe"
 }
 
 variable "hub_vnet_subnets" {
@@ -37,12 +35,5 @@ variable "firewall_address_space" {
 }
 
 
-variable "spoke_vnets" {
-  description = "Map of spoke VNets, each containing a map of subnets (key=name, value=address prefix)"
-  type = map(object({
-    address_space = string
-    subnets       = map(object({ cidr_block = string }))
-  }))
-}
 
 
