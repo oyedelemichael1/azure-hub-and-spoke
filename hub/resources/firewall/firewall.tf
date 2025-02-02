@@ -8,15 +8,15 @@ resource "azurerm_firewall_network_rule_collection" "network-collection" {
   priority            = var.priority
   action              = var.firewall_action
 
-    dynamic "rule" {
-        for_each = var.rules
-        content {
-            name                  = rule.value.name
-            source_addresses      = rule.value.source_addresses
-            destination_ports     = rule.value.destination_ports
-            destination_addresses = rule.value.destination_addresses
-            protocols             = rule.value.protocols
-        }
+  dynamic "rule" {
+    for_each = var.rules
+    content {
+      name                  = rule.value.name
+      source_addresses      = rule.value.source_addresses
+      destination_ports     = rule.value.destination_ports
+      destination_addresses = rule.value.destination_addresses
+      protocols             = rule.value.protocols
+    }
   }
 }
 
@@ -30,19 +30,19 @@ resource "azurerm_firewall_nat_rule_collection" "nat_collection" {
   priority            = var.priority
   action              = "Dnat"
 
-  
+
   dynamic "rule" {
     for_each = var.rules
-      content {
-        name                = rule.value.name
-        source_addresses    = rule.value.source_addresses
-        destination_ports   = rule.value.destination_ports
-        destination_addresses = rule.value.destination_addresses
-        translated_address  = rule.value.translated_address
-        translated_port     = rule.value.translated_port
-        protocols           = rule.value.protocols
-        }
+    content {
+      name                  = rule.value.name
+      source_addresses      = rule.value.source_addresses
+      destination_ports     = rule.value.destination_ports
+      destination_addresses = rule.value.destination_addresses
+      translated_address    = rule.value.translated_address
+      translated_port       = rule.value.translated_port
+      protocols             = rule.value.protocols
     }
+  }
 }
 
 #application rule
@@ -56,19 +56,19 @@ resource "azurerm_firewall_application_rule_collection" "example" {
   action              = var.firewall_action
 
   dynamic "rule" {
-        for_each = var.rules
+    for_each = var.rules
+    content {
+      name             = rule.value.name
+      source_addresses = rule.value.source_addresses
+      target_fqdns     = rule.value.target_fqdns
+      dynamic "protocol" {
+        for_each = rule.value["app_rule_protocols"]
         content {
-            name = rule.value.name
-            source_addresses = rule.value.source_addresses
-            target_fqdns = rule.value.target_fqdns
-            dynamic "protocol" {
-                for_each = rule.value["app_rule_protocols"]
-                content {
-                    port = protocol.value["port"]
-                    type = protocol.value["type"]
-                }
-            }
+          port = protocol.value["port"]
+          type = protocol.value["type"]
         }
+      }
+    }
   }
 
 }

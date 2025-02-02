@@ -60,7 +60,36 @@ provider "azurerm" {
 
 ### To Test the Script
 
-Create a terraform.tfvars file in the root directory with the following.
+Create a storage container on azure and generate an access key.
+
+```
+#!/bin/bash
+
+RESOURCE_GROUP_NAME=tfstate
+STORAGE_ACCOUNT_NAME=tfstate$RANDOM
+CONTAINER_NAME=tfstate
+
+# Create resource group
+az group create --name $RESOURCE_GROUP_NAME --location eastus
+
+# Create storage account
+az storage account create --resource-group $RESOURCE_GROUP_NAME --name $STORAGE_ACCOUNT_NAME --sku Standard_LRS --encryption-services blob
+
+# Create blob container
+az storage container create --name $CONTAINER_NAME --account-name $STORAGE_ACCOUNT_NAME
+
+```
+
+Then run these commands to set the access key as an evironment variable
+
+```
+ACCOUNT_KEY=$(az storage account keys list --resource-group $RESOURCE_GROUP_NAME --account-name $STORAGE_ACCOUNT_NAME --query '[0].value' -o tsv)
+export ARM_ACCESS_KEY=$ACCOUNT_KEY
+```
+
+Update resource_group_name, storage_account_name and container_name in the provider.tf file in both the hub and spoke directories. Update them in the main.tf file in the spoke directory also
+
+Create dev.tfvars, staging.tfvars and prod.tfvars file in the spoke directory and set the values for these parameters.
 
 ```hcl
 client_id = "<your-client-id>"
@@ -68,4 +97,43 @@ client_secret = "<your-client-secret>"
 tenant_id = "<your-tenant-id>"<
 hub_subscription_id="<your-hub-subscription-id>"
 spoke_subscription_id="<your-spoke-subscription-id>"
+spoke_vnet_address_space = "<spoke_vnet_address_space>"
+spoke_vnet_subnets = {
+  "default"    = "<subnet cidr>"
+  "app-subnet" = "<subnet cidr>"
+  "db-subnet"  = "<subnet cidr>"
+}
+resource_group_location = "West Europe"
+```
+
+Create a terraform.tfvars file in the hub folder with this content.
+
+```hcl
+client_id = "<your-client-id>"
+client_secret = "<your-client-secret>"
+tenant_id = "<your-tenant-id>"<
+hub_subscription_id="<your-hub-subscription-id>"
+spoke_subscription_id="<your-spoke-subscription-id>"
+```
+
+Run these commands to create the infrastructure.
+
+```
+cd hub
+terraform workspace new hub
+terraform plan
+terraform apply 
+
+cd spoke
+terraform workspace new dev
+terraform plan -var-file=dev.tfvars
+terraform apply -var-file=dev.tfvars
+
+terraform workspace new staging
+terraform plan -var-file=staging.tfvars
+terraform apply -var-file=staging.tfvars
+
+terraform workspace new prod
+terraform plan -var-file=prod.tfvars
+terraform apply -var-file=prod.tfvars
 ```

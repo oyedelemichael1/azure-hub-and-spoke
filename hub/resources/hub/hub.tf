@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "hub_spoke_rg" {
-  provider            = azurerm.hub
+  provider = azurerm.hub
   name     = var.resource_group_name
   location = var.resource_group_location
 }
@@ -11,30 +11,30 @@ resource "azurerm_virtual_network" "hub" {
   location            = azurerm_resource_group.hub_spoke_rg.location
   resource_group_name = azurerm_resource_group.hub_spoke_rg.name
   address_space       = [var.hub_vnet_address_space]
-  depends_on = [ azurerm_resource_group.hub_spoke_rg ]
+  depends_on          = [azurerm_resource_group.hub_spoke_rg]
 }
 
 #hub subnets
 resource "azurerm_subnet" "hub_subnets" {
-  provider            = azurerm.hub
-  for_each            = var.hub_vnet_subnets
-  name                = each.key
-  resource_group_name = azurerm_resource_group.hub_spoke_rg.name
+  provider             = azurerm.hub
+  for_each             = var.hub_vnet_subnets
+  name                 = each.key
+  resource_group_name  = azurerm_resource_group.hub_spoke_rg.name
   virtual_network_name = azurerm_virtual_network.hub.name
-  address_prefixes    = [each.value]
-  depends_on = [ azurerm_virtual_network.hub ]
+  address_prefixes     = [each.value]
+  depends_on           = [azurerm_virtual_network.hub]
 }
 
 
 
 #firewall subnet
 resource "azurerm_subnet" "firewall_subnet" {
-  provider            = azurerm.hub
+  provider             = azurerm.hub
   name                 = "AzureFirewallSubnet"
   resource_group_name  = azurerm_resource_group.hub_spoke_rg.name
   virtual_network_name = azurerm_virtual_network.hub.name
   address_prefixes     = [var.firewall_address_space]
-  depends_on = [ azurerm_virtual_network.hub ]
+  depends_on           = [azurerm_virtual_network.hub]
 }
 
 #firewall device public IP
@@ -45,7 +45,7 @@ resource "azurerm_public_ip" "firewall_public_ip" {
   resource_group_name = azurerm_resource_group.hub_spoke_rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  depends_on = [ azurerm_resource_group.hub_spoke_rg ]
+  depends_on          = [azurerm_resource_group.hub_spoke_rg]
 }
 
 
@@ -70,22 +70,22 @@ resource "azurerm_firewall" "hub_firewall" {
 #route table to route all traffic through firewall
 resource "azurerm_route_table" "rt" {
   provider            = azurerm.hub
-  name                          = "firewall-rt"
-  location                      = azurerm_resource_group.hub_spoke_rg.location
-  resource_group_name           = azurerm_resource_group.hub_spoke_rg.name
+  name                = "firewall-rt"
+  location            = azurerm_resource_group.hub_spoke_rg.location
+  resource_group_name = azurerm_resource_group.hub_spoke_rg.name
 
   route {
     name                   = "firewall-route"
     address_prefix         = "0.0.0.0/0"
     next_hop_type          = "VirtualAppliance"
-    next_hop_in_ip_address = "${azurerm_firewall.hub_firewall.ip_configuration[0].private_ip_address}"
+    next_hop_in_ip_address = azurerm_firewall.hub_firewall.ip_configuration[0].private_ip_address
   }
 }
 
 #associate firewall route table to hub default subnet
 resource "azurerm_subnet_route_table_association" "hub_gateway_rt_hub_vnet_gateway_subnet" {
-  provider            = azurerm.hub
-  for_each        = azurerm_subnet.hub_subnets
+  provider       = azurerm.hub
+  for_each       = azurerm_subnet.hub_subnets
   subnet_id      = each.value.id
   route_table_id = azurerm_route_table.rt.id
   depends_on     = [azurerm_subnet.hub_subnets]

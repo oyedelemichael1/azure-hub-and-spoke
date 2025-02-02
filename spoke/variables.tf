@@ -1,13 +1,13 @@
 variable "resource_group_name" {
   description = "The name of the Azure resource group"
   type        = string
-  default =  "hub-spoke-rg"
+  default     = "hub-spoke-rg"
 }
 
 variable "resource_group_location" {
   description = "The location of the Azure resource group"
   type        = string
-  default = "West Europe"
+  default     = "West Europe"
 }
 
 variable "hub_subscription_id" {
@@ -34,5 +34,20 @@ variable "client_secret" {
 
 variable "tenant_id" {
   description = "Azure Tenant ID"
+  type        = string
+}
+
+variable "spoke_vnet_address_space" {
+  description = "The VNet CIDR of the spoke"
+  type        = string
+}
+
+variable "spoke_vnet_subnets" {
+  description = "Azure Tenant ID"
+  type        = map(string)
+}
+
+variable "access_key" {
+  description = "The azurerm terraform backend access key"
   type        = string
 }

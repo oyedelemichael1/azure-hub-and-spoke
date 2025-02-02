@@ -13,13 +13,13 @@ variable "rules" {
   type = list(object({
     name                  = string
     source_addresses      = list(string)
-    destination_ports     = optional(list(string))  # Only used in NAT and network rules
-    destination_addresses = optional(list(string))  # Only used in NAT and network rules
-    protocols             = optional(list(string))  # Only used in NAT and network rules
-    translated_address    = optional(string)        # Only used in NAT rules
-    translated_port       = optional(string)        # Only used in NAT rules
-    target_fqdns     = optional(list(string))       # Only used in Application rules
-    app_rule_protocols    =  optional(list(object({ # Only used in Application rules
+    destination_ports     = optional(list(string)) # Only used in NAT and network rules
+    destination_addresses = optional(list(string)) # Only used in NAT and network rules
+    protocols             = optional(list(string)) # Only used in NAT and network rules
+    translated_address    = optional(string)       # Only used in NAT rules
+    translated_port       = optional(string)       # Only used in NAT rules
+    target_fqdns          = optional(list(string)) # Only used in Application rules
+    app_rule_protocols = optional(list(object({    # Only used in Application rules
       port = number
       type = string
     })))
@@ -39,13 +39,13 @@ variable "collection_name" {
 variable "firewall_action" {
   description = "The firewall action, Allow or Deny"
   type        = string
-  default = "Allow"
+  default     = "Allow"
 }
 
 variable "firewall_rule_type" {
   description = "The firewall rule type, nat or network"
   type        = string
-  default = "network"
+  default     = "network"
 }
 
 variable "azure_firewall_name" {
