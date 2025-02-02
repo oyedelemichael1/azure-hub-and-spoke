@@ -87,9 +87,9 @@ ACCOUNT_KEY=$(az storage account keys list --resource-group $RESOURCE_GROUP_NAME
 export ARM_ACCESS_KEY=$ACCOUNT_KEY
 ```
 
-Update resource_group_name, storage_account_name and container_name in the provider.tf file in both the hub and spoke directories. Update them in the main.tf file in the spoke directory also
+Update `resource_group_name`, `storage_account_name` and `container_name` in the `provider.tf` file in both the hub and spoke directories. Update them in the `main.tf` file in the spoke directory also
 
-Create dev.tfvars, staging.tfvars and prod.tfvars file in the spoke directory and set the values for these parameters.
+Create `dev.tfvars`, `staging.tfvars` and `prod.tfvars` file in the spoke directory and set the values for these parameters.
 
 ```hcl
 client_id = "<your-client-id>"
@@ -106,7 +106,7 @@ spoke_vnet_subnets = {
 resource_group_location = "West Europe"
 ```
 
-Create a terraform.tfvars file in the hub folder with this content.
+Create a `terraform.tfvars` file in the hub folder with this content.
 
 ```hcl
 client_id = "<your-client-id>"
