@@ -17,16 +17,16 @@ module "hub" {
 
 }
 
-module "spoke1" {
+module "dev" {
   source = "./resources/spoke"
 
-  resource_group_name     = "spoke1-rg"
+  resource_group_name     = "dev-rg"
   resource_group_location = "West Europe"
   hub_vnet_name = module.hub.hub_vnet_name
   hub_vnet_id = module.hub.hub_vnet_id
   firewall_private_ip  = module.hub.firewall_private_ip
   hub_resource_group = module.hub.resource_group_name
-  spoke_vnet_name               = "spoke1-vnet"
+  spoke_vnet_name               = "dev-vnet"
   spoke_vnet_address_space      = "10.1.0.0/16"
   spoke_vnet_subnets = {
     "default"  = "10.1.0.0/24"
@@ -39,16 +39,16 @@ module "spoke1" {
   }
 }
 
-module "spoke2" {
+module "staging" {
   source = "./resources/spoke"
 
-  resource_group_name     = "spoke2-rg"
+  resource_group_name     = "staging-rg"
   resource_group_location = "West US"
   hub_vnet_name = module.hub.hub_vnet_name
   hub_vnet_id = module.hub.hub_vnet_id
   hub_resource_group = module.hub.resource_group_name
   firewall_private_ip  = module.hub.firewall_private_ip
-  spoke_vnet_name               = "spoke2-vnet"
+  spoke_vnet_name               = "staging-vnet"
   spoke_vnet_address_space      = "10.2.0.0/16"
   spoke_vnet_subnets = {
     "default"  = "10.2.0.0/24"
@@ -57,6 +57,28 @@ module "spoke2" {
   }
   providers = {
     azurerm.spoke = azurerm.spoke
+    azurerm.hub = azurerm.hub
+  }
+}
+
+module "production" {
+  source = "./resources/spoke"
+
+  resource_group_name     = "production-rg"
+  resource_group_location = "West US"
+  hub_vnet_name = module.hub.hub_vnet_name
+  hub_vnet_id = module.hub.hub_vnet_id
+  hub_resource_group = module.hub.resource_group_name
+  firewall_private_ip  = module.hub.firewall_private_ip
+  spoke_vnet_name               = "production-vnet"
+  spoke_vnet_address_space      = "10.3.0.0/16"
+  spoke_vnet_subnets = {
+    "default"  = "10.3.0.0/24"
+    "app-subnet"  = "10.3.2.0/24"
+    "db-subnet"   = "10.3.3.0/24"
+  }
+  providers = {
+    azurerm.spoke = azurerm.hub   #prod in hub subscription
     azurerm.hub = azurerm.hub
   }
 }
@@ -72,17 +94,17 @@ module "network_firewall_rule" {
 
   rules = [
     {
-      name                  = "allow spoke1 to spoke2"
-      source_addresses      = module.spoke1.spoke_vnet_cidr
+      name                  = "allow dev to staging"
+      source_addresses      = module.dev.spoke_vnet_cidr
       destination_ports     = ["22"]
-      destination_addresses = module.spoke2.spoke_vnet_cidr
+      destination_addresses = module.staging.spoke_vnet_cidr
       protocols             = ["TCP"]
     },
     {
-      name                  = "allow spoke2 to spoke1"
-      source_addresses      = module.spoke2.spoke_vnet_cidr
+      name                  = "allow staging to dev"
+      source_addresses      = module.staging.spoke_vnet_cidr
       destination_ports     = ["22"]
-      destination_addresses = module.spoke1.spoke_vnet_cidr
+      destination_addresses = module.dev.spoke_vnet_cidr
       protocols             = ["TCP"]
     }
   ]
@@ -114,6 +136,41 @@ module "firewall_nat_rules" {
       protocols           = ["TCP"]
     }
   ]
+  providers = {
+    azurerm.spoke = azurerm.spoke
+    azurerm.hub = azurerm.hub
+  }
+}
+
+
+module "firewall_app_rules" {
+  source              = "./resources/firewall"
+  collection_name = "allow-access-to-google"
+  firewall_rule_type           = "app"
+  azure_firewall_name = module.hub.firewall_name
+  resource_group_name = module.hub.resource_group_name
+  resource_group_location = module.hub.resource_group_location
+  priority            = 300
+
+  rules = [
+      {
+        name             = "Allow-GitHub"
+        source_addresses = ["10.0.1.0/24"]
+        target_fqdns     = ["github.com"]
+        app_rule_protocols = [
+          { port = 443, type = "Https" },
+          { port = 80, type = "Http" }
+        ]
+      },
+      {
+        name             = "Allow-Google"
+        source_addresses = ["10.0.3.0/24"]
+        target_fqdns     = ["google.com"]
+        app_rule_protocols = [
+          { port = 443, type = "Https" }
+        ]
+      }
+    ]
   providers = {
     azurerm.spoke = azurerm.spoke
     azurerm.hub = azurerm.hub

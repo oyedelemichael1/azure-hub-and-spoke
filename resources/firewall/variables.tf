@@ -13,14 +13,18 @@ variable "rules" {
   type = list(object({
     name                  = string
     source_addresses      = list(string)
-    destination_ports     = list(string)
-    destination_addresses = list(string) 
-    protocols             = list(string)
+    destination_ports     = optional(list(string))  # Only used in NAT and network rules
+    destination_addresses = optional(list(string))  # Only used in NAT and network rules
+    protocols             = optional(list(string))  # Only used in NAT and network rules
     translated_address    = optional(string)        # Only used in NAT rules
     translated_port       = optional(string)        # Only used in NAT rules
+    target_fqdns     = optional(list(string))       # Only used in Application rules
+    app_rule_protocols    =  optional(list(object({ # Only used in Application rules
+      port = number
+      type = string
+    })))
   }))
 }
-
 
 variable "priority" {
   description = "The rule priority, minimum of 100"

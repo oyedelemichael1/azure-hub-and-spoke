@@ -45,3 +45,30 @@ resource "azurerm_firewall_nat_rule_collection" "nat_collection" {
     }
 }
 
+#application rule
+resource "azurerm_firewall_application_rule_collection" "example" {
+  provider            = azurerm.hub
+  count               = var.firewall_rule_type == "app" ? 1 : 0
+  name                = var.collection_name
+  azure_firewall_name = var.azure_firewall_name
+  resource_group_name = var.resource_group_name
+  priority            = var.priority
+  action              = var.firewall_action
+
+  dynamic "rule" {
+        for_each = var.rules
+        content {
+            name = rule.value.name
+            source_addresses = rule.value.source_addresses
+            target_fqdns = rule.value.target_fqdns
+            dynamic "protocol" {
+                for_each = rule.value["app_rule_protocols"]
+                content {
+                    port = protocol.value["port"]
+                    type = protocol.value["type"]
+                }
+            }
+        }
+  }
+
+}
