@@ -1,0 +1,35 @@
+name: Deploy to Different Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Choose the environment to deploy to'
+        required: false
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to selected environment
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "dev" ]]; then
+            echo "Deploying to dev environment..."
+          elif [[ "${{ github.event.inputs.environment }}" == "staging" ]]; then
+            echo "Deploying to staging environment..."
+          elif [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
+            echo "Deploying to prod environment..."
+          else
+            echo "No valid environment selected, defaulting to dev."
+            echo "Deploying to dev environment..."
+          fi
