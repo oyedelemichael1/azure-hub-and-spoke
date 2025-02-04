@@ -10,21 +10,21 @@ pipeline {
     stages {
 
         stage('MR') {
-            when {changeRequest()}
+            // when {changeRequest()}
             steps {
                 sh "echo 'running terraform plan with dev credentials'"
             }  
         }
 
         stage('dev') {
-            when { not{ changeRequest()}}
+            // when { not{ changeRequest()}}
             steps {
                 sh "echo 'deploying to dev'"
             }
         }
 
         stage('staging') {
-            when { not{ changeRequest()}}           
+            // when { not{ changeRequest()}}           
             steps {
 
                 def userInput = false
@@ -44,7 +44,7 @@ pipeline {
         }
 
         stage('prod') {
-            when { not{ changeRequest()}}
+            // when { not{ changeRequest()}}
             steps {
                 def userInput = false
                 script {
