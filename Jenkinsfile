@@ -12,14 +12,14 @@ pipeline {
         stage('MR') {
             when {changeRequest()}
             steps {
-                sh "running terraform plan with dev credentials"
+                sh "echo 'running terraform plan with dev credentials'"
             }  
         }
 
         stage('dev') {
             when { not{ changeRequest()}}
             steps {
-                sh "deploying to dev"
+                sh "echo 'deploying to dev'"
             }
         }
 
