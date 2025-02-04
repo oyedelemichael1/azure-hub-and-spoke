@@ -29,8 +29,8 @@ pipeline {
 
                 def userInput = false
                 script {
-                    def userInput = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
-                    echo 'userInput: ' + userInput
+                    def userInput2 = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
+                    echo 'userInput: ' + userInput2
 
                     if(userInput == true) {
                         echo "deploying to staging"
@@ -49,7 +49,7 @@ pipeline {
                 def userInput = false
                 script {
                     def userInput2 = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
-                    echo 'userInput: ' + userInput
+                    echo 'userInput: ' + userInput2
 
                     if(userInput == true) {
                         echo "deploying to prod"
