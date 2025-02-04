@@ -7,11 +7,6 @@ on:
         description: 'Choose the environment to deploy to'
         required: false
         default: 'dev'
-        type: choice
-        options:
-          - dev
-          - staging
-          - prod
 
 jobs:
   deploy:
