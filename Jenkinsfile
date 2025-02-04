@@ -26,39 +26,18 @@ pipeline {
         stage('staging') {
             // when { not{ changeRequest()}}           
             steps {
-
-                def userInput = false
                 script {
-                    def userInput2 = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
-                    echo 'userInput: ' + userInput2
-
-                    if(userInput == true) {
-                        echo "deploying to staging"
-                    } else {
-                        // not do action
-                        echo "staging deployment was aborted."
-                    }
-
-                }    
+                    input message: 'Deploy to staging?', ok: 'Proceed'
+                }
             }
         }
 
         stage('prod') {
             // when { not{ changeRequest()}}
             steps {
-                def userInput3 = false
                 script {
-                    def userInput2 = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
-                    echo 'userInput: ' + userInput4
-
-                    if(userInput == true) {
-                        echo "deploying to prod"
-                    } else {
-                        // not do action
-                        echo "staging deployment was aborted."
-                    }
-
-                }    
+                    input message: 'Deploy to production?', ok: 'Proceed'
+                }
             }
         }
     }
