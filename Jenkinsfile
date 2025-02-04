@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment{
-        DEV_VARS = credentials('dev-varible-credential-id')
-        STAGING_VARS = credentials('staging-varible-credential-id')
-        PROD_VRS = credentials('production-varible-credential-id')
+        DEV_VARS = credentials('dev-variable-credential-id')
+        STAGING_VARS = credentials('staging-variable-credential-id')
+        PROD_VRS = credentials('production-variable-credential-id')
     }
 
     stages {
