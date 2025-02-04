@@ -26,5 +26,5 @@ jobs:
             echo "Deploying to prod environment..."
           else
             echo "No valid environment selected, defaulting to dev."
-            echo "Deploying to dev environment..."
+            echo "Deploying to dev environment...since you cannot decide"
           fi
