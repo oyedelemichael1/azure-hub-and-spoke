@@ -4,7 +4,7 @@ pipeline {
     environment{
         DEV_VARS = credentials('dev-variable-credential-id')
         STAGING_VARS = credentials('staging-variable-credential-id')
-        PROD_VRS = credentials('production-variable-credential-id')
+        PROD_VRS = credentials('prod-variable-credential-id')
     }
 
     stages {
