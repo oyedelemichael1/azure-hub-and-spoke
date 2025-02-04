@@ -10,9 +10,11 @@ pipeline {
     stages {
 
         stage('dev') {
-            script {
-                echo 'deploying to dev'
-                echo "running terraform apply -auto-approve -var-file=DEV_VARS"
+            steps{
+                script {
+                    echo 'deploying to dev'
+                    echo "running terraform apply -auto-approve -var-file=DEV_VARS"
+                }
             }
         }
 
