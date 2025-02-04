@@ -57,7 +57,7 @@ pipeline {
                         parameters: [
                             choice(
                                 name: 'ENVIRONMENT',
-                                choices: ['dev', 'staging', 'prod'],
+                                // choices: ['dev', 'staging', 'prod'],
                                 description: 'Select the environment for deployment',
                                 defaultValue: 'dev'
                             )
