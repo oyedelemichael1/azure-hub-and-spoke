@@ -12,7 +12,7 @@ pipeline {
         stage('dev') {
             steps{
                 script {
-                    echo 'deploying to dev'
+                    echo 'deploying to dev 1'
                     echo "running terraform apply -auto-approve -var-file=DEV_VARS"
                 }
             }
@@ -22,7 +22,7 @@ pipeline {
             steps {
                 script {
                     input message: 'Deploy to staging?', ok: 'Proceed'
-                    echo "Deploying to staging"
+                    echo "Deploying to staging 1"
                     echo "running terraform apply -auto-approve -var-file=STAGING_VARS"
                 }
             }
@@ -32,7 +32,7 @@ pipeline {
             steps {
                 script {
                     input message: 'Deploy to production?', ok: 'Proceed'
-                    echo "Deploying to production"
+                    echo "Deploying to production 1"
                     echo "running terraform apply -auto-approve -var-file=PROD_VARS"
                 }
             }
