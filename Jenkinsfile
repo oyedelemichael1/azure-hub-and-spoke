@@ -44,23 +44,26 @@ pipeline {
     agent any
 
     parameters {
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Choose the environment to deploy to')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Choose the environment to deploy to', defaultValue: 'dev')
     }
 
     stages {
         stage('Deploy Selection') {
             steps {
                 script {
-                    def environmentChoice = input(
+                    // Default to 'dev' if no input is provided
+                    def environmentChoice = params.ENVIRONMENT ?: input(
                         message: 'Choose the environment to deploy to:',
                         parameters: [
                             choice(
                                 name: 'ENVIRONMENT',
                                 choices: ['dev', 'staging', 'prod'],
-                                description: 'Select the environment for deployment'
+                                description: 'Select the environment for deployment',
+                                defaultValue: 'dev'
                             )
                         ]
                     )
+
                     echo "Selected Environment: ${environmentChoice}"
 
                     // You can now use the environment choice to determine actions
@@ -82,3 +85,4 @@ pipeline {
         }
     }
 }
+
