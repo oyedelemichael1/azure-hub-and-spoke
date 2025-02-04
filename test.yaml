@@ -1,0 +1,286 @@
+#This file is for cf
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: common/azdo-templates-yaml
+
+trigger:
+  branches:
+    include:
+    - release
+
+variables:
+  awsRegion: 'us-east-1'
+  test: 'true'
+  dev: 'false'
+  staging: 'false'
+  production: 'false'
+  dr: 'false'
+
+parameters:
+  - name: awsRegion
+    displayName: AWS Region
+    type: string
+    default: 'us-east-1'
+  - name: artifactoryRepo
+    displayName: Artifactory Repository
+    type: string
+    default: 'core'
+  - name: pipelineEnvironmentNonProd
+    displayName: pipelineEnvironment for Non Prod
+    type: string
+    default: 'dev'
+  - name: pipelineEnvironmentProd
+    displayName: pipelineEnvironment for Prod
+    type: string
+    default: 'Production'
+  - name: awsCredentialsNonProd
+    displayName: AWS Credentials for Non Prod
+    type: string
+    default: 'Core Non-Prod'
+  - name: awsCredentialsProd
+    displayName: AWS Credentials for Prod
+    type: string
+    default: 'Core Prod'
+  - name: awsCredentialsDr
+    displayName: AWS Credentials for DR
+    type: string
+    default: 'Core DR'
+  - name: productName
+    displayName: Product Name
+    type: string
+    default: 'bdtestapp'
+  - name: templates
+    displayName: CF Stack Names
+    type: object
+    default:
+      - 'dan-test-app-sg-win'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Build
+    condition: ne(variables['Build.Reason'], 'Manual')
+    jobs:
+    - job: Lint # This job lints all of the yaml and yml files in the repository.
+      steps:
+        - checkout: self
+          clean: true
+        - task: UsePythonVersion@0
+          displayName: Install Python
+          inputs:
+            versionSpec: '3.x'
+            addToPath: true
+            architecture: 'x64'
+        - bash: sudo python -m pip install --upgrade pip
+          displayName: Update pip
+        - bash: sudo python -m pip install yamllint
+          displayName: Install Linters
+        - script: "yamllint -d \"{ignore: azure-pipelines*.y*ml, extends: default, rules: {line-length: disable,new-line-at-end-of-file: disable,indentation: disable}}\" $(Build.SourcesDirectory)/."
+          displayName: Lint Files Using yamllint
+
+    - job: Checkforreleasebranch
+      dependsOn: Lint
+      condition: and(succeeded(), ne(variables['System.PullRequest.SourceBranch'], 'refs/heads/release'), ne(variables['System.PullRequest.TargetBranch'], 'refs/heads/release'), ne(variables['Build.SourceBranch'], 'refs/heads/release'))
+      steps:
+        - script: 'ThisIsNotReleaseBranch.exe'
+          failOnStderr: true
+          displayName: 'Command Line Script'
+
+    - job: Sonarqube
+      steps:
+        - task: SonarQubePrepare@5
+          inputs:
+            SonarQube: 'SonarQube'
+            scannerMode: 'CLI'
+            configMode: 'file'
+            configFile: 'sonar-project.properties'
+          displayName: 'Prepare SonarQube'
+
+        - task: SonarQubeAnalyze@5
+          displayName: 'Run SonarQube Scanner'
+          inputs:
+            jdkversion: 'JAVA_HOME_17_X64'
+
+        - task: SonarQubePublish@5
+          inputs:
+            pollingTimeoutSec: '300'
+          displayName: 'SonarQube Results to ADO'
+
+    - job: CopyAndPublishArtifacts
+      dependsOn: Lint
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Reason'], 'Manual'))
+      displayName: Copy and Publish Build Artifacts
+      steps:
+        - task: CopyFiles@2
+          displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+          inputs:
+            SourceFolder: '$(Build.SourcesDirectory)'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+            Contents: |
+              **/*.y*ml
+              params.json
+              **
+              !**/azure-pipeline*.y*ml
+              !.git/**/*
+            CleanTargetFolder: true
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish Artifact: drop'
+
+    - job: UploadToArtifactory
+      dependsOn: CopyAndPublishArtifacts
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Reason'], 'Manual'))
+      displayName: Upload to Artifactory
+      steps:
+        - template: pipelines/upload-artifactory-stepsv2.yml@templates
+          parameters:
+            artifactName: 'drop'
+            artifactoryRepo: ${{ parameters.artifactoryRepo }}
+
+  - stage: DeployDev
+    displayName: Deploy To Development
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['dev'], 'true'), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
+    variables:
+      environment: dev
+    jobs:
+      - deployment: Dev
+        displayName: Deploy To Development
+        environment: ${{ parameters.pipelineEnvironmentNonProd }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: pipelines/deploy-cf.yml@templates
+                  parameters:
+                    awsCredentials: ${{ parameters.awsCredentialsNonProd }}
+                    awsRegion: ${{ parameters.awsRegion }}
+                    environment: 'dev'
+                    artifactoryRepo: ${{ parameters.artifactoryRepo }}
+                    productName: ${{ parameters.productName }}
+                    templates: ${{ parameters.templates }}
+
+  # Uncomment Test and Staging stages in the case of a different type of build for cf
+  - stage: DeployTest
+    displayName: Deploy To Test
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['test'], 'true'), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
+    variables:
+      environment: test
+    jobs:
+      - deployment: Test
+        displayName: Deploy To Test
+        environment: ${{ parameters.pipelineEnvironmentNonProd }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: pipelines/deploy-cf.yml@templates
+                  parameters:
+                    awsCredentials: ${{ parameters.awsCredentialsNonProd }}
+                    awsRegion: ${{ parameters.awsRegion }}
+                    environment: 'test'
+                    artifactoryRepo: ${{ parameters.artifactoryRepo }}
+                    productName: ${{ parameters.productName }}
+                    templates: ${{ parameters.templates }}
+
+  - stage: DeployStaging
+    displayName: Deploy to Staging
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['staging'], 'true'), eq(variables['Build.SourceBranch'],  'refs/heads/release'))
+    variables:
+      environment: staging
+    jobs:
+      - deployment: Staging
+        displayName: Deploy To Staging
+        environment: ${{ parameters.pipelineEnvironmentNonProd }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: pipelines/deploy-cf.yml@templates
+                  parameters:
+                    awsCredentials: ${{ parameters.awsCredentialsNonProd }}
+                    awsRegion: ${{ parameters.awsRegion }}
+                    environment: 'staging'
+                    artifactoryRepo: ${{ parameters.artifactoryRepo }}
+                    productName: ${{ parameters.productName }}
+                    templates: ${{ parameters.templates }}
+
+  - stage: DeployProduction
+    displayName: Deploy to Production
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['prod'], 'true'), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
+    variables:
+      environment: prod
+    jobs:
+      - deployment: Production
+        displayName: Deploy To Production
+        environment: ${{ parameters.pipelineEnvironmentProd }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: pipelines/deploy-cf.yml@templates
+                  parameters:
+                    awsCredentials: ${{ parameters.awsCredentialsProd }}
+                    awsRegion: ${{ parameters.awsRegion }}
+                    environment: 'prod'
+                    artifactoryRepo: ${{ parameters.artifactoryRepo }}
+                    productName: ${{ parameters.productName }}
+                    templates: ${{ parameters.templates }}
+
+      - job: AutomatedMergeGovernance
+        dependsOn: Production
+        steps:
+        - task: PowerShell@2
+          inputs:
+            targetType: 'inline'
+            script: |
+              $env:AZURE_DEVOPS_EXT_PAT = '$(System.AccessToken)'
+              #$env:REPO_ID = '$(Build.Repository.ID)'
+              $pr = az repos pr create `
+                       --source-branch release `
+                       --target-branch master `
+                       --title 'Automated Merge of release into master' |
+                    ConvertFrom-Json
+              az repos pr update --id $($pr.pullRequestId) --auto-complete true
+              az repos pr set-vote --id $($pr.pullRequestId) --vote approve
+              Write-Host $($pr.pullRequestId)
+              Write-Host 'Created PR $($pr.pullRequestId)'
+
+      - job: AddGitTag
+        dependsOn: AutomatedMergeGovernance
+        variables:
+          tag_name: prod/v$(Build.BuildNumber).$(System.JobAttempt)
+        steps:
+        - checkout: self
+          clean: true
+          persistCredentials: true
+        - bash: |
+            git config --global user.email $(Build.RequestedForEmail)
+            git config --global user.name $(Build.QueuedBy)
+            git tag $(tag_name)
+            git push origin $(tag_name)
+
+  - stage: DeployDr
+    displayName: Deploy To DR
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['dr'], 'true'), eq(variables['Build.SourceBranch'], 'refs/heads/release'))
+    variables:
+      environment: dr
+    jobs:
+      - deployment: Dr
+        displayName: Deploy To Dr
+        environment: ${{ parameters.pipelineEnvironmentProd }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: pipelines/deploy-cf.yml@templates
+                  parameters:
+                    awsCredentials: ${{ parameters.awsCredentialsDr }}
+                    awsRegion: ${{ parameters.awsRegion }}
+                    environment: 'dr'
+                    artifactoryRepo: ${{ parameters.artifactoryRepo }}
+                    productName: ${{ parameters.productName }}
+                    templates: ${{ parameters.templates }}
