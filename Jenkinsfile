@@ -43,9 +43,9 @@
 pipeline {
     agent any
 
-    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Choose the environment to deploy to', defaultValue: 'dev')
-    }
+    // parameters {
+    //     choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Choose the environment to deploy to', defaultValue: 'dev')
+    // }
 
     stages {
         stage('Deploy Selection') {
