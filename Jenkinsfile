@@ -46,10 +46,10 @@ pipeline {
         stage('prod') {
             // when { not{ changeRequest()}}
             steps {
-                def userInput = false
+                def userInput3 = false
                 script {
                     def userInput2 = input(id: 'Proceed1', message: 'Promote build?', parameters: [[$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']])
-                    echo 'userInput: ' + userInput2
+                    echo 'userInput: ' + userInput4
 
                     if(userInput == true) {
                         echo "deploying to prod"
